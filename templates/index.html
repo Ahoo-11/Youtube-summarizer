@@ -50,7 +50,22 @@
                     
                     <!-- Search and Filter Section -->
                     <div class="search-filter-section">
-                        <input type="text" class="search-input" placeholder="Search archives..." oninput="filterArchives()">
+                        <div class="search-bar">
+                            <input type="text" id="searchInput" class="search-input" placeholder="Search archives..." oninput="filterArchives()">
+                            <div class="filter-dropdown">
+                                <button onclick="toggleFilterMenu()" class="filter-btn">
+                                    <i class="fas fa-filter"></i> Filters
+                                </button>
+                                <div id="filterMenu" class="filter-menu">
+                                    <div class="filter-section">
+                                        <h4>Channels</h4>
+                                        <div id="channelFilters" class="filter-options">
+                                            <!-- Channel filters will be populated dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <button class="view-toggle" onclick="toggleView()">
                             <i class="fas fa-grid"></i>
                         </button>
@@ -700,6 +715,90 @@ ${archive.comments.map(comment => `
                 </div>
             `;
         }
+
+        // Add these new functions for search and filtering
+        let activeFilters = {
+            channels: new Set()
+        };
+
+        function filterArchives() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const archives = getDisplayedArchives();
+            const filteredArchives = archives.filter(archive => {
+                const matchesSearch = archive.title.toLowerCase().includes(searchTerm);
+                const matchesChannelFilter = activeFilters.channels.size === 0 || 
+                                           activeFilters.channels.has(archive.channelTitle);
+                
+                return matchesSearch && matchesChannelFilter;
+            });
+            
+            displayArchives(filteredArchives);
+            updateFilterCounts(archives);
+        }
+
+        function toggleFilterMenu() {
+            const filterMenu = document.getElementById('filterMenu');
+            filterMenu.classList.toggle('show');
+        }
+
+        function updateFilterOptions() {
+            const archives = getDisplayedArchives();
+            const channels = new Set(archives.map(archive => archive.channelTitle));
+            
+            const channelFilters = document.getElementById('channelFilters');
+            channelFilters.innerHTML = Array.from(channels).map(channel => `
+                <label class="filter-option">
+                    <input type="checkbox" 
+                           value="${channel}"
+                           ${activeFilters.channels.has(channel) ? 'checked' : ''}
+                           onchange="toggleChannelFilter('${channel}')">
+                    <span class="filter-label">${channel}</span>
+                    <span class="filter-count" id="channel-count-${channel.replace(/\s+/g, '-')}">0</span>
+                </label>
+            `).join('');
+            
+            updateFilterCounts(archives);
+        }
+
+        function toggleChannelFilter(channel) {
+            if (activeFilters.channels.has(channel)) {
+                activeFilters.channels.delete(channel);
+            } else {
+                activeFilters.channels.add(channel);
+            }
+            filterArchives();
+        }
+
+        function updateFilterCounts(archives) {
+            const channelCounts = {};
+            archives.forEach(archive => {
+                channelCounts[archive.channelTitle] = (channelCounts[archive.channelTitle] || 0) + 1;
+            });
+            
+            Object.entries(channelCounts).forEach(([channel, count]) => {
+                const countElement = document.getElementById(`channel-count-${channel.replace(/\s+/g, '-')}`);
+                if (countElement) {
+                    countElement.textContent = count;
+                }
+            });
+        }
+
+        // Update the existing displayArchives function to call updateFilterOptions
+        const originalDisplayArchives = displayArchives;
+        displayArchives = function(archivesList = null) {
+            originalDisplayArchives(archivesList);
+            updateFilterOptions();
+        };
+
+        // Close filter menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const filterMenu = document.getElementById('filterMenu');
+            const filterBtn = document.querySelector('.filter-btn');
+            
+            if (!filterMenu.contains(event.target) && !filterBtn.contains(event.target)) {
+                filterMenu.classList.remove('show');
+            }
+        });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
