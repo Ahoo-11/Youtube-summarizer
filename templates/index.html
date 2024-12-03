@@ -131,45 +131,76 @@
 
         // Modal Management
         function showSingleArchive(archive) {
-            document.getElementById('homeDashboard').style.display = 'none';
-            document.getElementById('archivesView').style.display = 'none';
-            
-            const singleArchiveView = document.getElementById('singleArchiveView');
-            const singleArchiveContent = document.getElementById('singleArchiveContent');
-            
-            singleArchiveContent.innerHTML = `
-                <div class="single-archive-header">
-                    <h1>${archive.title}</h1>
-                    <img src="${archive.thumbnail}" alt="Video thumbnail" class="full-thumbnail">
-                    <div class="archive-metadata">
-                        <span>${archive.date}</span>
-                        <a href="${archive.url}" target="_blank" class="video-link">
-                            <i class="fab fa-youtube"></i> Watch on YouTube
-                        </a>
+            try {
+                if (typeof archive === 'string') {
+                    archive = JSON.parse(archive);
+                }
+                
+                document.getElementById('homeDashboard').style.display = 'none';
+                document.getElementById('archivesView').style.display = 'none';
+                
+                const singleArchiveView = document.getElementById('singleArchiveView');
+                const singleArchiveContent = document.getElementById('singleArchiveContent');
+                
+                if (!singleArchiveView || !singleArchiveContent) {
+                    console.error('Required elements not found');
+                    return;
+                }
+
+                singleArchiveContent.innerHTML = `
+                    <div class="single-archive-header">
+                        <h1>${archive.title || 'Untitled'}</h1>
+                        <div class="channel-info">
+                            <a href="https://www.youtube.com/channel/${archive.channelId}" target="_blank">
+                                <i class="fab fa-youtube"></i> ${archive.channelTitle}
+                            </a>
+                        </div>
+                        <img src="${archive.thumbnail}" alt="Video thumbnail" class="full-thumbnail">
+                        <div class="archive-metadata">
+                            <span>${archive.date}</span>
+                            <a href="${archive.url}" target="_blank" class="video-link">
+                                <i class="fab fa-youtube"></i> Watch on YouTube
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="single-archive-summary">
-                    <div class="summary-header">
-                        <h2>Summary</h2>
-                        <button class="edit-btn" onclick="toggleEdit(this, '${generateArchiveId(archive.url, archive.date)}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
+                    <div class="single-archive-summary">
+                        <div class="summary-header">
+                            <h2>Video Summary</h2>
+                            <button class="edit-btn" onclick="toggleEdit(this, '${generateArchiveId(archive.url, archive.date)}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </div>
+                        <div class="summary-content markdown-content" id="summary-${generateArchiveId(archive.url, archive.date)}" contenteditable="false">
+                            ${marked.parse(archive.summary)}
+                        </div>
+                        ${archive.comments && archive.comments.length > 0 ? `
+                            <div class="comments-section">
+                                <h3>Top Comments</h3>
+                                <div class="comments-content">
+                                    ${archive.comments.map(comment => `
+                                        <div class="comment">
+                                            <div class="comment-header">
+                                                <strong>${comment.author}</strong>
+                                                <span class="comment-likes">
+                                                    <i class="fas fa-thumbs-up"></i> ${comment.likes}
+                                                </span>
+                                            </div>
+                                            <div class="comment-text">${comment.text}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
-                    <div class="summary-content markdown-content" id="summary-${generateArchiveId(archive.url, archive.date)}" contenteditable="false">
-                        ${marked.parse(archive.summary)}
-                    </div>
-                    <div class="edit-actions" style="display: none;">
-                        <button class="save-btn" onclick="saveSummaryEdit('${generateArchiveId(archive.url, archive.date)}')">
-                            <i class="fas fa-save"></i> Save
-                        </button>
-                        <button class="cancel-btn" onclick="cancelEdit('${generateArchiveId(archive.url, archive.date)}')">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            singleArchiveView.style.display = 'block';
+                `;
+                
+                singleArchiveView.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error showing single archive:', error);
+                console.error('Archive data:', archive);
+                alert('There was an error displaying this archive. Please try again.');
+            }
         }
 
         // View toggle
@@ -209,6 +240,8 @@
 
             archivesContainer.innerHTML = archives.map(archive => {
                 const archiveId = generateArchiveId(archive.url, archive.date);
+                const archiveData = encodeURIComponent(JSON.stringify(archive));
+                
                 return `
                     <div class="archive-card">
                         <div class="archive-select">
@@ -221,12 +254,16 @@
                                 <span class="checkmark"></span>
                             </label>
                         </div>
-                        <div class="archive-preview" onclick="showSingleArchive(${JSON.stringify(archive).replace(/"/g, '&quot;')})">
+                        <div class="archive-preview" data-archive="${archiveData}" onclick="showSingleArchiveFromData(this)">
                             <img src="${archive.thumbnail}" alt="Video thumbnail" class="video-thumbnail">
                             <div class="archive-info">
                                 <h3>${archive.title}</h3>
+                                <div class="channel-info">
+                                    <a href="https://www.youtube.com/channel/${archive.channelId}" target="_blank">
+                                        <i class="fab fa-youtube"></i> ${archive.channelTitle}
+                                    </a>
+                                </div>
                                 <span class="date">${archive.date}</span>
-                                <div class="summary-preview markdown-content">${marked.parse(archive.summary.substring(0, 150) + '...')}</div>
                             </div>
                         </div>
                     </div>
@@ -236,38 +273,126 @@
             updateDownloadButtonState();
         }
 
+        // Add this new function to handle archive display
+        function showSingleArchiveFromData(element) {
+            try {
+                const archiveData = decodeURIComponent(element.dataset.archive);
+                const archive = JSON.parse(archiveData);
+                
+                document.getElementById('homeDashboard').style.display = 'none';
+                document.getElementById('archivesView').style.display = 'none';
+                
+                const singleArchiveView = document.getElementById('singleArchiveView');
+                const singleArchiveContent = document.getElementById('singleArchiveContent');
+                
+                singleArchiveContent.innerHTML = `
+                    <div class="generated-summary">
+                        <div class="summary-header">
+                            <h2>${archive.title}</h2>
+                        </div>
+                        <div class="summary-content-wrapper">
+                            <div class="summary-thumbnail">
+                                <img src="${archive.thumbnail}" alt="Video thumbnail">
+                            </div>
+                            <div class="metadata-row">
+                                <span>${archive.date}</span>
+                                <a href="${archive.url}" target="_blank" class="video-link">
+                                    <i class="fab fa-youtube"></i> Watch on YouTube
+                                </a>
+                                <span class="metadata-separator">|</span>
+                                <a href="https://www.youtube.com/channel/${archive.channelId}" target="_blank" class="channel-link">
+                                    <i class="fab fa-youtube"></i> ${archive.channelTitle}
+                                </a>
+                            </div>
+                            <div class="summary-text markdown-content" id="summary-${generateArchiveId(archive.url, archive.date)}" contenteditable="false">
+                                ${marked.parse(archive.summary)}
+                                <div class="edit-actions" style="display: none;">
+                                    <button class="edit-btn" onclick="toggleEdit(this, '${generateArchiveId(archive.url, archive.date)}')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
+                            </div>
+                            ${archive.comments && archive.comments.length > 0 ? `
+                                <div class="comments-section">
+                                    <h3>Top Comments</h3>
+                                    <div class="comments-content">
+                                        ${archive.comments.map(comment => `
+                                            <div class="comment">
+                                                <div class="comment-header">
+                                                    <strong>${comment.author}</strong>
+                                                    <span class="comment-likes">
+                                                        <i class="fas fa-thumbs-up"></i> ${comment.likes}
+                                                    </span>
+                                                </div>
+                                                <div class="comment-text">${comment.text}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                singleArchiveView.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error showing single archive:', error);
+                console.error('Archive data:', element.dataset.archive);
+                alert('There was an error displaying this archive. Please try again.');
+            }
+        }
+
         // Download selected archives
         function downloadSelected() {
             const archives = getDisplayedArchives();
-            const selectedContent = archives
-                .filter(archive => {
-                    const archiveId = generateArchiveId(archive.url, archive.date);
-                    return selectedArchives.has(archiveId);
-                })
-                .map(archive => {
-                    return `Title: ${archive.title}
+            const selectedSummaries = archives.filter(archive => {
+                const archiveId = generateArchiveId(archive.url, archive.date);
+                return selectedArchives.has(archiveId);
+            });
+
+            if (selectedSummaries.length === 0) return;
+
+            const zip = new JSZip();
+            
+            // Create a folder for the summaries
+            const summariesFolder = zip.folder("youtube-summaries");
+
+            // Add each summary as a separate file in the zip
+            selectedSummaries.forEach(archive => {
+                const fileName = `${archive.title.replace(/[^a-z0-9]/gi, '_')}.md`;
+                const content = `# ${archive.title}
 Date: ${archive.date}
 URL: ${archive.url}
+Channel: ${archive.channelTitle}
 
-Summary:
+## Video Summary
 ${archive.summary}
 
+${archive.comments ? `
+## Top Comments
+${archive.comments.map(comment => `
+* ${comment.author} (${comment.likes} likes):
+  "${comment.text}"
+`).join('\n')}
+` : ''}
 ----------------------------------------
 `;
-                })
-                .join('\n');
+                summariesFolder.file(fileName, content);
+            });
 
-            if (selectedContent) {
-                const blob = new Blob([selectedContent], { type: 'text/plain' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `youtube-summaries-${new Date().toISOString().split('T')[0]}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            }
+            // Generate and download the zip file
+            zip.generateAsync({ type: "blob" })
+                .then(function(content) {
+                    const url = window.URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `youtube-summaries-${new Date().toISOString().split('T')[0]}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                });
         }
 
         // Update download button state
@@ -339,26 +464,21 @@ ${archive.summary}
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error);
                 
-                // Show only the current generated summary
-                resultDiv.innerHTML = `
-                    <div class="video-preview">
-                        <img src="${data.thumbnail}" alt="Video thumbnail" class="thumbnail">
-                        <div class="preview-content">
-                            <h2>${data.title}</h2>
-                            <div class="summary-content markdown-content">${marked.parse(data.summary)}</div>
-                        </div>
-                    </div>
-                `;
-
-                // Save to history
+                // Update the history item to include channel info and comments
                 const historyItem = {
                     videoId: data.videoId,
                     url: url,
                     title: data.title,
                     summary: data.summary,
                     thumbnail: data.thumbnail,
+                    channelTitle: data.channelTitle,
+                    channelId: data.channelId,
+                    comments: data.comments,
                     date: new Date().toLocaleDateString()
                 };
+                
+                // Update the result display to show channel info and comments
+                displaySummaryResult(data);
 
                 // Get existing history and update
                 let history = JSON.parse(localStorage.getItem('summaryHistory') || '[]');
@@ -531,6 +651,54 @@ ${archive.summary}
             summaryDiv.classList.remove('editing');
             editButton.innerHTML = '<i class="fas fa-edit"></i> Edit';
             editActions.style.display = 'none';
+        }
+
+        // Update the generateSummary function's success callback
+        function displaySummaryResult(data) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="generated-summary">
+                    <div class="summary-header">
+                        <h2>${data.title}</h2>
+                    </div>
+                    <div class="summary-content-wrapper">
+                        <div class="summary-thumbnail">
+                            <img src="${data.thumbnail}" alt="Video thumbnail">
+                        </div>
+                        <div class="metadata-row">
+                            <span>${new Date().toLocaleDateString()}</span>
+                            <a href="${data.url}" target="_blank" class="video-link">
+                                <i class="fab fa-youtube"></i> Watch on YouTube
+                            </a>
+                            <span class="metadata-separator">|</span>
+                            <a href="https://www.youtube.com/channel/${data.channelId}" target="_blank" class="channel-link">
+                                <i class="fab fa-youtube"></i> ${data.channelTitle}
+                            </a>
+                        </div>
+                        <div class="summary-text markdown-content">
+                            ${marked.parse(data.summary)}
+                        </div>
+                    </div>
+                    ${data.comments && data.comments.length > 0 ? `
+                        <div class="comments-section">
+                            <h3>Top Comments</h3>
+                            <div class="comments-content">
+                                ${data.comments.map(comment => `
+                                    <div class="comment">
+                                        <div class="comment-header">
+                                            <strong>${comment.author}</strong>
+                                            <span class="comment-likes">
+                                                <i class="fas fa-thumbs-up"></i> ${comment.likes}
+                                            </span>
+                                        </div>
+                                        <div class="comment-text">${comment.text}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

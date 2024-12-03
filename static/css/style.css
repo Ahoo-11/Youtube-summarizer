@@ -279,13 +279,90 @@ body {
 }
 
 .archive-card {
-    position: relative;
     background: var(--background-color);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+}
+
+.archive-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.archive-preview {
+    cursor: pointer;
+}
+
+.video-thumbnail {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+}
+
+.archive-info {
+    padding: 1rem;
+}
+
+.archive-info h3 {
+    font-size: 1.1rem;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.4;
+    color: var(--text-color);
+}
+
+.channel-info {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.channel-info a {
+    color: var(--text-color-secondary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.channel-info a:hover {
+    color: var(--primary-color);
+}
+
+.date {
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+}
+
+.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.list-view .archive-card {
+    display: flex;
+    align-items: stretch;
+}
+
+.list-view .archive-preview {
+    display: flex;
+    flex: 1;
+}
+
+.list-view .video-thumbnail {
+    width: 200px;
+    border-radius: 12px 0 0 12px;
+}
+
+.list-view .archive-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .archive-select {
@@ -293,8 +370,8 @@ body {
     top: 1rem;
     left: 1rem;
     z-index: 2;
-    opacity: 1; /* Always visible */
-    transition: opacity 0.2s ease;
+    display: block !important;
+    opacity: 1 !important;
 }
 
 .checkbox-container {
@@ -332,27 +409,6 @@ body {
     border: solid white;
     border-width: 0 3px 3px 0;
     transform: rotate(45deg);
-}
-
-.archive-preview {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    cursor: pointer;
-}
-
-.archive-preview img {
-    width: 100%;
-    aspect-ratio: 16/9;
-    object-fit: cover;
-    border-radius: 4px;
-}
-
-.archive-preview h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    line-height: 1.4;
 }
 
 .archive-actions {
@@ -429,7 +485,8 @@ body {
 
 /* Dashboard specific styles */
 .dashboard-container {
-    max-width: 800px;
+    width: 100%;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
 }
@@ -470,41 +527,60 @@ body {
 
 .actions-bar {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    justify-content: space-between;
     align-items: center;
+    padding: 1rem;
+    background: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    position: sticky; /* Make it stick to top */
+    top: 0;
+    z-index: 10;
 }
 
 .select-all {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.select-all input[type="checkbox"] {
+    margin: 0;
+    padding: 0;
+}
+
+.download-btn, .delete-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    opacity: 1 !important; /* Force visibility */
 }
 
 .download-btn {
-    padding: 0.8rem 1.5rem;
     background-color: var(--primary-color);
     color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.download-btn:not(:disabled):hover {
-    background-color: var(--primary-color-dark);
-    transform: translateY(-1px);
 }
 
 .download-btn:disabled {
     background-color: var(--border-color);
     cursor: not-allowed;
-    transform: none;
+}
+
+.delete-btn {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.delete-btn:disabled {
+    background-color: var(--border-color);
+    cursor: not-allowed;
 }
 
 /* Select All container */
@@ -1054,4 +1130,259 @@ body.dark-mode .video-link {
 body.dark-mode .markdown-content,
 body.light-mode .markdown-content {
     line-height: var(--base-line-height) !important;
+}
+
+.channel-info {
+    margin: 10px 0;
+    font-size: 0.9rem;
+}
+
+.channel-info a {
+    color: var(--primary-color);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.channel-info a:hover {
+    text-decoration: underline;
+}
+
+.summary-section, .comments-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: var(--card-background);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+.summary-section h3, .comments-section h3 {
+    margin-top: 0;
+    color: var(--text-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+}
+
+.summary-preview h4 {
+    margin: 10px 0 5px 0;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.preview-content {
+    flex: 1;
+    padding: 20px;
+}
+
+.comment {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--background-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.comment-likes {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.comment-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.metadata-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-color-secondary);
+    font-size: 0.9rem;
+}
+
+.metadata-separator {
+    color: var(--text-color-secondary);
+    opacity: 0.5;
+}
+
+.channel-link {
+    color: var(--text-color-secondary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.channel-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+/* Add these new styles for the generated summary */
+.generated-summary {
+    width: 100%;
+    max-width: 800px;
+    margin: 2rem auto;
+    background: var(--background-color);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+}
+
+.generated-summary .summary-header {
+    margin-bottom: 1.5rem;
+}
+
+.generated-summary .summary-header h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    line-height: 1.3;
+}
+
+.summary-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.summary-thumbnail {
+    width: 100%;
+}
+
+.summary-thumbnail img {
+    width: 100%;
+    border-radius: 12px;
+    aspect-ratio: 16/9;
+    object-fit: contain;
+    background-color: #000;
+    box-shadow: var(--card-shadow);
+}
+
+.summary-text {
+    color: var(--text-color);
+    line-height: 1.6;
+    font-size: 1.1rem;
+}
+
+.metadata-row {
+    margin: 1rem 0;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+@media (max-width: 1024px) {
+    .summary-content-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-thumbnail {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}
+
+/* Update single archive view styles */
+.single-archive-view {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Remove old styles that we don't need anymore */
+.single-archive-header,
+.archive-metadata,
+.single-archive-summary {
+    /* Remove these style blocks as we're using the generated-summary styles */
+}
+
+/* Update the edit button styles */
+.edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.edit-btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+    background-color: var(--primary-color-dark);
+    transform: translateY(-1px);
+}
+
+/* Update comments section styling */
+.comments-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.comments-section h3 {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+.comment {
+    margin-bottom: 1.5rem;
+    padding: 1.2rem;
+    background: var(--background-color);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: border-color 0.2s ease;
+}
+
+.comment:hover {
+    border-color: var(--primary-color);
+}
+
+/* Update metadata row styling */
+.metadata-row {
+    margin: 1rem 0;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    color: var(--text-color-secondary);
+    font-size: 0.9rem;
+}
+
+/* Add hover effects to links */
+.video-link:hover,
+.channel-link:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+/* Remove the floating checkbox near home tab */
+.sidebar-menu .checkbox-container,
+.sidebar .checkbox-container {
+    display: none;
 }

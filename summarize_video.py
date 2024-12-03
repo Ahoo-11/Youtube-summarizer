@@ -62,7 +62,6 @@ def summarize_with_openrouter(transcript_text):
         Please provide a clear, well-structured breakdown of the key points from the video, following these guidelines:
 
         1. Main Breakdown:
-        - Consider the context provided by the video title
         - Focus on delivering the information promised in the title
         - For tutorial videos: outline specific steps and instructions
         - For review videos: include pros, cons, and overall conclusions
@@ -77,7 +76,7 @@ def summarize_with_openrouter(transcript_text):
         - Ensure all significant details are captured
         - Use markdown formatting for better readability
         - Expert Opinion (Required): You should add these at the end of each breakdowns like if video as 7 breakdown points you need to give your opnion on each one.
-            - Share your analysis of the conten, tell me what you learn from that particular breakdown.
+            - Share your analysis of the content, tell me what you learn from that particular breakdown.
             - Point out any limitations or areas for further exploration    
             - Make sure to label as Expert opinion under each breakdown where you write the expert openion.
 
@@ -87,7 +86,9 @@ def summarize_with_openrouter(transcript_text):
         - Uses everyday language and clear examples
         - Avoids technical jargon
         - Focuses on practical understanding
-        - Keeps it brief (2-3 sentences)"""
+        - Keeps it brief (2-3 sentences)
+
+        Important: Do not generate or include any title or heading at the start of the summary. The video's original title will be used."""
 
         # Make API request
         response = requests.post(
@@ -202,6 +203,56 @@ def test_openrouter_connection():
     except Exception as e:
         print(f"Connection Error: {e}")
         return False
+
+def get_video_info(video_id):
+    """Get video title, thumbnail, and channel info from YouTube Data API"""
+    api_key = os.getenv('YOUTUBE_API_KEY')
+    url = f'https://www.googleapis.com/youtube/v3/videos?part=snippet&id={video_id}&key={api_key}'
+    
+    try:
+        response = requests.get(url)
+        data = response.json()
+        
+        if 'items' in data and len(data['items']) > 0:
+            snippet = data['items'][0]['snippet']
+            return {
+                'title': snippet['title'],
+                'thumbnail': snippet['thumbnails']['high']['url'],
+                'channelTitle': snippet['channelTitle'],
+                'channelId': snippet['channelId']
+            }
+    except Exception as e:
+        print(f"Error fetching video info: {e}")
+    
+    return None
+
+def get_video_comments(video_id, max_comments=100):
+    """Fetch comments for a YouTube video"""
+    api_key = os.getenv('YOUTUBE_API_KEY')
+    url = f'https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId={video_id}&maxResults={max_comments}&key={api_key}'
+    
+    try:
+        response = requests.get(url)
+        data = response.json()
+        
+        if 'items' in data:
+            comments = []
+            for item in data['items']:
+                comment = item['snippet']['topLevelComment']['snippet']
+                comments.append({
+                    'text': comment['textDisplay'],
+                    'author': comment['authorDisplayName'],
+                    'likes': comment['likeCount'],
+                    'publishedAt': comment['publishedAt']
+                })
+            
+            # Sort comments by likes and get top 15
+            comments.sort(key=lambda x: x['likes'], reverse=True)
+            return comments[:15]
+    except Exception as e:
+        print(f"Error fetching comments: {e}")
+    
+    return []
 
 if __name__ == "__main__":
     main()
