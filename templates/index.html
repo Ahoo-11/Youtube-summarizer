@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Initialize marked with options
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+    </script>
 </head>
 <body>
     <div class="app-container">
@@ -52,14 +59,23 @@
                     <div class="search-filter-section">
                         <div class="search-bar">
                             <input type="text" id="searchInput" class="search-input" placeholder="Search archives..." oninput="filterArchives()">
-                            <div class="filter-dropdown">
-                                <button onclick="toggleFilterMenu()" class="filter-btn">
+                            <div class="new-filter-container">
+                                <button onclick="toggleNewFilter()" class="new-filter-btn">
                                     <i class="fas fa-filter"></i> Filters
                                 </button>
-                                <div id="filterMenu" class="filter-menu">
-                                    <div class="filter-section">
-                                        <h4>Channels</h4>
-                                        <div id="channelFilters" class="filter-options">
+                                <div id="newFilterMenu" class="new-filter-menu">
+                                    <div class="new-filter-section">
+                                        <h4>Filter by Channels</h4>
+                                        <div class="channel-search">
+                                            <input type="text" 
+                                                   id="channelSearchInput" 
+                                                   placeholder="Search channels..." 
+                                                   oninput="searchChannels(this.value)">
+                                        </div>
+                                        <div class="selected-channels" id="selectedChannels">
+                                            <!-- Selected channels will appear here -->
+                                        </div>
+                                        <div id="channelFilters" class="new-filter-options">
                                             <!-- Channel filters will be populated dynamically -->
                                         </div>
                                     </div>
@@ -107,6 +123,9 @@
     </div>
 
     <script>
+        // Initialize marked
+        const { marked } = window;
+        
         let currentView = 'grid';
         let selectedArchives = new Set();
         let customFolders = new Map();
@@ -186,7 +205,7 @@
                             </button>
                         </div>
                         <div class="summary-content markdown-content" id="summary-${generateArchiveId(archive.url, archive.date)}" contenteditable="false">
-                            ${marked.parse(archive.summary)}
+                            ${marked.parse(data.summary)}
                         </div>
                         ${archive.comments && archive.comments.length > 0 ? `
                             <div class="comments-section">
@@ -721,84 +740,150 @@ ${archive.comments.map(comment => `
             channels: new Set()
         };
 
-        function filterArchives() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const archives = getDisplayedArchives();
-            const filteredArchives = archives.filter(archive => {
-                const matchesSearch = archive.title.toLowerCase().includes(searchTerm);
-                const matchesChannelFilter = activeFilters.channels.size === 0 || 
-                                           activeFilters.channels.has(archive.channelTitle);
-                
-                return matchesSearch && matchesChannelFilter;
-            });
-            
-            displayArchives(filteredArchives);
-            updateFilterCounts(archives);
-        }
+        let allChannels = new Set(); // Store all unique channels
+        const MAX_DISPLAYED_CHANNELS = 7;
 
-        function toggleFilterMenu() {
-            const filterMenu = document.getElementById('filterMenu');
+        function toggleNewFilter() {
+            const filterMenu = document.getElementById('newFilterMenu');
             filterMenu.classList.toggle('show');
         }
 
-        function updateFilterOptions() {
-            const archives = getDisplayedArchives();
-            const channels = new Set(archives.map(archive => archive.channelTitle));
+        function getChannelsToDisplay(query = '') {
+            // Get all archives from localStorage
+            const archives = JSON.parse(localStorage.getItem('summaryHistory') || '[]');
             
-            const channelFilters = document.getElementById('channelFilters');
-            channelFilters.innerHTML = Array.from(channels).map(channel => `
-                <label class="filter-option">
-                    <input type="checkbox" 
-                           value="${channel}"
-                           ${activeFilters.channels.has(channel) ? 'checked' : ''}
-                           onchange="toggleChannelFilter('${channel}')">
-                    <span class="filter-label">${channel}</span>
-                    <span class="filter-count" id="channel-count-${channel.replace(/\s+/g, '-')}">0</span>
-                </label>
-            `).join('');
-            
-            updateFilterCounts(archives);
+            // Create a map of channels with their latest video dates
+            const channelDates = new Map();
+            archives.forEach(archive => {
+                const date = new Date(archive.date);
+                if (!channelDates.has(archive.channelTitle) || 
+                    date > channelDates.get(archive.channelTitle)) {
+                    channelDates.set(archive.channelTitle, date);
+                }
+            });
+
+            // Get all unique channels
+            const uniqueChannels = new Set(archives.map(archive => archive.channelTitle));
+
+            // Filter and sort channels
+            let channels = Array.from(uniqueChannels)
+                .filter(channel => {
+                    // Don't show already selected channels
+                    if (activeFilters.channels.has(channel)) return false;
+                    
+                    // If there's a search query, filter by it
+                    if (query) {
+                        return channel.toLowerCase().includes(query.toLowerCase());
+                    }
+                    return true;
+                })
+                .sort((a, b) => {
+                    // Sort by date, newest first
+                    const dateA = channelDates.get(a) || new Date(0);
+                    const dateB = channelDates.get(b) || new Date(0);
+                    return dateB - dateA;
+                });
+
+            // Return only the first MAX_DISPLAYED_CHANNELS channels
+            return channels.slice(0, MAX_DISPLAYED_CHANNELS);
         }
 
-        function toggleChannelFilter(channel) {
-            if (activeFilters.channels.has(channel)) {
-                activeFilters.channels.delete(channel);
-            } else {
-                activeFilters.channels.add(channel);
+        function searchChannels(query) {
+            const channelFilters = document.getElementById('channelFilters');
+            channelFilters.innerHTML = '';
+            
+            const channelsToDisplay = getChannelsToDisplay(query);
+            
+            if (channelsToDisplay.length === 0) {
+                channelFilters.innerHTML = '<div class="no-results">No matching channels found</div>';
+                return;
             }
+            
+            channelsToDisplay.forEach(channel => addChannelOption(channel));
+        }
+
+        function addChannelOption(channel) {
+            const channelFilters = document.getElementById('channelFilters');
+            const div = document.createElement('div');
+            div.className = 'filter-option';
+            div.innerHTML = `
+                <span class="filter-label">${channel}</span>
+            `;
+            div.onclick = () => selectChannel(channel);
+            channelFilters.appendChild(div);
+        }
+
+        function selectChannel(channel) {
+            activeFilters.channels.add(channel);
+            updateSelectedChannels();
+            searchChannels(document.getElementById('channelSearchInput').value);
             filterArchives();
         }
 
-        function updateFilterCounts(archives) {
-            const channelCounts = {};
-            archives.forEach(archive => {
-                channelCounts[archive.channelTitle] = (channelCounts[archive.channelTitle] || 0) + 1;
-            });
-            
-            Object.entries(channelCounts).forEach(([channel, count]) => {
-                const countElement = document.getElementById(`channel-count-${channel.replace(/\s+/g, '-')}`);
-                if (countElement) {
-                    countElement.textContent = count;
-                }
-            });
+        function removeChannel(channel) {
+            activeFilters.channels.delete(channel);
+            updateSelectedChannels();
+            searchChannels(document.getElementById('channelSearchInput').value);
+            filterArchives();
         }
 
-        // Update the existing displayArchives function to call updateFilterOptions
+        function updateSelectedChannels() {
+            const selectedChannelsDiv = document.getElementById('selectedChannels');
+            selectedChannelsDiv.innerHTML = Array.from(activeFilters.channels)
+                .map(channel => `
+                    <div class="selected-channel-tag">
+                        ${channel}
+                        <span class="remove-tag" onclick="event.stopPropagation(); removeChannel('${channel.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-times"></i>
+                        </span>
+                    </div>
+                `).join('');
+        }
+
+        function updateFilterOptions() {
+            // Get all archives from localStorage
+            const archives = JSON.parse(localStorage.getItem('summaryHistory') || '[]');
+            allChannels = new Set(archives.map(archive => archive.channelTitle));
+            searchChannels(''); // Reset search to show all channels (limited to MAX_DISPLAYED_CHANNELS)
+            updateSelectedChannels();
+        }
+
+        // Update the filter function to use the new filtering system
+        function filterArchives() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const allArchives = JSON.parse(localStorage.getItem('summaryHistory') || '[]');
+            
+            const filteredArchives = allArchives.filter(archive => {
+                // Search in title
+                const matchesSearch = searchQuery === '' || 
+                                    archive.title.toLowerCase().includes(searchQuery);
+                
+                // Filter by selected channels
+                const matchesChannel = activeFilters.channels.size === 0 || 
+                                     activeFilters.channels.has(archive.channelTitle);
+                
+                return matchesSearch && matchesChannel;
+            });
+            
+            displayArchives(filteredArchives);
+        }
+
+        // Close filter menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const filterMenu = document.getElementById('newFilterMenu');
+            const filterBtn = document.querySelector('.new-filter-btn');
+            
+            if (filterMenu && filterBtn && !filterMenu.contains(event.target) && !filterBtn.contains(event.target)) {
+                filterMenu.classList.remove('show');
+            }
+        });
+
+        // Make sure updateFilterOptions is called when archives are displayed
         const originalDisplayArchives = displayArchives;
         displayArchives = function(archivesList = null) {
             originalDisplayArchives(archivesList);
             updateFilterOptions();
         };
-
-        // Close filter menu when clicking outside
-        document.addEventListener('click', function(event) {
-            const filterMenu = document.getElementById('filterMenu');
-            const filterBtn = document.querySelector('.filter-btn');
-            
-            if (!filterMenu.contains(event.target) && !filterBtn.contains(event.target)) {
-                filterMenu.classList.remove('show');
-            }
-        });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
