@@ -16,7 +16,7 @@ const Archives: React.FC<ArchivesProps> = ({ summaries, onSelectSummary }) => {
       
       <Grid container spacing={3}>
         {summaries.map((summary) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={summary.id}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={summary.videoId}>
             <Paper
               elevation={0}
               sx={{
@@ -32,12 +32,12 @@ const Archives: React.FC<ArchivesProps> = ({ summaries, onSelectSummary }) => {
               }}
               onClick={() => onSelectSummary(summary)}
             >
-              {summary.videoInfo.thumbnail && (
+              {summary.thumbnail && (
                 <Box
                   sx={{
                     width: '100%',
                     height: 180,
-                    backgroundImage: `url(${summary.videoInfo.thumbnail})`,
+                    backgroundImage: `url(${summary.thumbnail})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}
@@ -49,39 +49,33 @@ const Archives: React.FC<ArchivesProps> = ({ summaries, onSelectSummary }) => {
                     color: '#ffffff',
                     fontWeight: 500,
                     fontSize: '1rem',
-                    lineHeight: 1.2,
                     mb: 1,
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                   }}
                 >
-                  {summary.videoInfo.title}
+                  {summary.title}
                 </Typography>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  mt: 2
-                }}>
-                  <Typography 
-                    sx={{ 
-                      color: 'rgba(255, 255, 255, 0.7)',
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    {summary.videoInfo.channelTitle}
-                  </Typography>
-                  <Typography 
-                    sx={{ 
-                      color: 'rgba(255, 255, 255, 0.5)',
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    {new Date(summary.timestamp).toLocaleDateString()}
-                  </Typography>
-                </Box>
+                <Typography
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {summary.channelTitle}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    fontSize: '0.75rem',
+                    mt: 1,
+                  }}
+                >
+                  {new Date(summary.date).toLocaleDateString()}
+                </Typography>
               </Box>
             </Paper>
           </Grid>
