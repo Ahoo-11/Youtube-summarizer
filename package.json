@@ -1,0 +1,30 @@
+{
+  "name": "youtube-script-summary",
+  "version": "1.0.0",
+  "description": "YouTube video summarizer with transcript and comment analysis",
+  "scripts": {
+    "start": "ts-node src/backend/server.ts",
+    "build": "tsc",
+    "dev": "nodemon src/backend/server.ts",
+    "client": "cd client && npm run dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run client\""
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "googleapis": "^129.0.0",
+    "youtube-transcript": "^1.2.1",
+    "youtube-transcript-api": "^1.1.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.10",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

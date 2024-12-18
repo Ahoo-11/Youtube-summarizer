@@ -1,0 +1,29 @@
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --background-light: #ffffff;
+    --text-light: #2c3e50;
+    --background-dark: #1a1a1a;
+    --text-dark: #ecf0f1;
+    --error-color: #e74c3c;
+    --success-color: #27ae60;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --border-color: #ccc;
+    --hover-color: #ddd;
+    --base-font-size: 16.2px;
+    --base-line-height: 0.8;
+    --heading-line-height: 0.5;
+    --paragraph-spacing: -0.0004em;
+    --list-item-spacing: 0.02em;
+    --heading-spacing: 2em;
+}
+
+[data-theme="dark"] {
+    --background-color: var(--background-dark);
+    --text-color: var(--text-dark);
+}
+
+[data-theme="light"] {
+    --background-color: var(--background-light);
+    --text-color: var(--text-light);
+}

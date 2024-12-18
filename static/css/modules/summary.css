@@ -1,0 +1,27 @@
+.summary-content {
+    margin-top: 1rem;
+    line-height: var(--base-line-height);
+}
+
+.summary-content p {
+    margin: 0.5rem 0;
+    letter-spacing: var(--paragraph-spacing);
+}
+
+.summary-content ul,
+.summary-content ol {
+    margin: 0.25rem 0;
+    padding-left: 1.5rem;
+    letter-spacing: var(--list-item-spacing);
+}
+
+.markdown-content {
+    line-height: var(--base-line-height) !important;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    position: relative;
+    z-index: 10;
+}
